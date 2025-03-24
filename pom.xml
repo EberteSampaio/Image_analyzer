@@ -20,6 +20,13 @@
             <artifactId>javacv</artifactId>
             <version>1.5.11</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.bytedeco/ffmpeg-platform -->
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>ffmpeg-platform</artifactId>
+            <version>7.1-1.5.11</version>
+        </dependency>
+
     </dependencies>
 
 </project>
