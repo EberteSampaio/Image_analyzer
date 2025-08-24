@@ -9,6 +9,7 @@ import org.bytedeco.javacv.Java2DFrameConverter;
 //Manipulação de imagens
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
 import ij.IJ;
 
 //Importa classes do Java AWT para trabalhar com imagens em BufferedImage
@@ -18,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 
 public class VideoFrameExtractor {
@@ -26,12 +28,14 @@ public class VideoFrameExtractor {
     private final double diffThreshold;
     private final Java2DFrameConverter frameConverter;
     private ImageProcessor previousGrayProcessor;
+    private final int filtroEscolhido;
 
-    public VideoFrameExtractor(double blurThreshold, double diffThreshold) {
+    public VideoFrameExtractor(double blurThreshold, double diffThreshold, int filtroEscolhido) {
         this.blurThreshold = blurThreshold;
         this.diffThreshold = diffThreshold;
         this.frameConverter = new Java2DFrameConverter();
         this.previousGrayProcessor = null;
+        this.filtroEscolhido = filtroEscolhido;
     }
 
     public int extractFrames(String videoPath, Path outputDir) {
@@ -71,11 +75,33 @@ public class VideoFrameExtractor {
                 
                 //Converte para IMAGE plus pra gente conseguir usar no imageJ
                 ImagePlus impColor = new ImagePlus("Frame", bufferedImage);
-                ImageProcessor currentProcessor = impColor.getProcessor();
-                
+                ImageProcessor currentProcessor = impColor.getProcessor();       
+               
                 // Converter para escala de cinza
                 ImageProcessor grayProcessor = ImageUtils.convertToGrayscale(currentProcessor);
-                if (ImageUtils.isBlurry(grayProcessor, this.blurThreshold)) { System.out.println("Frame " + frameNumber + " descartado: Desfocado"); continue; }
+                
+                ImageProcessor edgeProcessor;
+                if (filtroEscolhido == 2) {
+                    edgeProcessor = grayProcessor.duplicate();
+                    edgeProcessor.findEdges();
+                    Path outputDirSobel = outputDir.resolve("filtro/sobel");
+                    Files.createDirectories(outputDirSobel);
+                    File sobelFile = outputDirSobel.resolve(String.format("sobel_%05d.png", frameNumber)).toFile();
+                    IJ.save(new ImagePlus(String.format("sobel_%05d", frameNumber), edgeProcessor), sobelFile.getAbsolutePath());
+                } else {
+                    edgeProcessor = ImageUtils.applyLaplace(grayProcessor); // Laplace
+                    Path outputDirLaplace = outputDir.resolve("filtro/laplace");
+                    Files.createDirectories(outputDirLaplace);
+                    File laplaceFile = outputDirLaplace.resolve(String.format("laplace_%05d.png", frameNumber)).toFile();
+                    IJ.save(new ImagePlus(String.format("laplace_%05d", frameNumber), edgeProcessor), laplaceFile.getAbsolutePath());
+                }
+                
+                ImageStatistics stats = edgeProcessor.getStatistics();
+                double variance = stats.stdDev * stats.stdDev;
+                if (variance < this.blurThreshold) {
+                    System.out.println("Frame " + frameNumber + " descartado: Desfocado (Variância: " + variance + ")");
+                    continue;
+                }
 
                 if (previousGrayProcessor != null) {
                     if (ImageUtils.isTooSimilar(grayProcessor, previousGrayProcessor, this.diffThreshold)) {
