@@ -4,6 +4,7 @@ import ij.ImagePlus;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 import ij.plugin.ImageCalculator;
+import ij.plugin.filter.Convolver;
 
 public class ImageUtils {
 
@@ -20,29 +21,28 @@ public class ImageUtils {
         // 'true' habilita o scaling se necessário
         return processor.convertToByteProcessor(true);
     }
-
     /**
-     * Verifica se uma imagem está desfocada com base na variância do Laplaciano.
-     * Este método usa Sobel (por enquanto).
+     * Aplica o filtro Laplaciano a um ImageProcessor.
      *
-     * @param processor O ImageProcessor.
-     * @param threshold O limiar de variância. Abaixo disso, é considerado desfocado.
-     * @return true se a imagem for considerada desfocada, false caso contrário.
+     * @param processor O ImageProcessor em escala de cinza.
+     * @return Um novo ImageProcessor com o filtro Laplace aplicado.
      */
-    public static boolean isBlurry(ImageProcessor processor, double threshold) {
-        if (processor == null) return true;
+    public static ImageProcessor applyLaplace(ImageProcessor processor) {
+        if (processor == null) return null;
 
-        // Duplicar para não alterar o processador original
-        ImageProcessor laplacianProcessor = processor.duplicate();
-        laplacianProcessor.findEdges();
+        // Faz uma cópia para aplicar o filtro sem mexer no original
+        ImageProcessor laplaceProcessor = processor.duplicate();
 
-        // Calcular a variância da imagem resultante
-        // Uma imagem nítida terá bordas mais proeminentes, resultando em maior variância
-        ImageStatistics stats = laplacianProcessor.getStatistics();
-        double variance = stats.stdDev * stats.stdDev; // Variância = desvio padrão ao quadrado
-        return variance < threshold;
+        float[] laplaceKernel = {
+             0, -1,  0,
+            -1,  4, -1,
+             0, -1,  0
+        };
+        Convolver convolver = new Convolver();
+        convolver.convolve(laplaceProcessor, laplaceKernel, 3, 3);
+        return laplaceProcessor;
     }
-
+    
     /**
      * Compara dois ImageProcessors para verificar se são muito similares.
      * A comparação é baseada na média da diferença absoluta dos pixels.
