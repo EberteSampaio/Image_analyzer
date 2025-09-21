@@ -1,8 +1,10 @@
-package edu.ifgoiano;
+package eduifgoiano;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
+
+import ij.IJ;
 
 public class Main {
     public static void main(String[] args) {
@@ -13,15 +15,15 @@ public class Main {
         double diffThreshold = 30;  
         
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Escolha o filtro: ");
-        System.out.println("1 - Laplace");
-        System.out.println("2 - Sobel");
+        IJ.log("Escolha o filtro: ");
+        IJ.log("1 - Laplace");
+        IJ.log("2 - Sobel");
         int filtroEscolhido = scanner.nextInt();
         scanner.close();
         
         VideoFrameExtractor extractor = new VideoFrameExtractor(blurThreshold, diffThreshold, filtroEscolhido);
         int savedFrames = extractor.extractFrames(videoPath, outputDir);
 
-        System.out.println("Concluído! " + savedFrames + " frames válidos salvos em: " + outputDir);
+        IJ.log("Concluído! " + savedFrames + " frames válidos salvos em: " + outputDir);
     }
 }

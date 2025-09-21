@@ -1,5 +1,6 @@
-package edu.ifgoiano;
+package eduifgoiano;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
@@ -58,7 +59,7 @@ public class ImageUtils {
         }
         if (current.getWidth() != previous.getWidth() || current.getHeight() != previous.getHeight()) {
             // Se os tamanhos forem diferentes, considera-se que não são similares (ou um erro)
-            System.err.println("Tentativa de comparar imagens de tamanhos diferentes.");
+            IJ.log("Tentativa de comparar imagens de tamanhos diferentes.");
             return false;
         }
 
@@ -71,7 +72,7 @@ public class ImageUtils {
         ImagePlus diffImp = ic.run("Difference create", currentImp, previousImp);
 
         if (diffImp == null) {
-            System.err.println("Falha ao calcular a diferença entre as imagens para verificação de similaridade.");
+            IJ.log("Falha ao calcular a diferença entre as imagens para verificação de similaridade.");
             return false; // Considerar como não similar para evitar erro
         }
 

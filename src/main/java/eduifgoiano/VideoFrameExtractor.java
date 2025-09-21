@@ -1,4 +1,4 @@
-package edu.ifgoiano;
+package eduifgoiano;
 
 //Capturar e converter frames de vídeo
 import org.bytedeco.javacv.FFmpegFrameGrabber;
@@ -49,21 +49,21 @@ public class VideoFrameExtractor {
                 Files.createDirectories(outputDir);
             }
             frameGrabber.start();
-            System.out.println("Processando video: " + videoPath);
-            System.out.println("Total de frames no video: " + frameGrabber.getLengthInFrames());
+IJ.log("Processando video: " + videoPath);
+IJ.log("Total de frames no video: " + frameGrabber.getLengthInFrames());
 
             while (true) {
                 Frame currentFrame;
                 try {
                     currentFrame = frameGrabber.grabImage();
                 } catch (FrameGrabber.Exception e) {
-                    System.err.println("Erro ao pegar frame: " + e.getMessage());
+                    IJ.log("Erro ao pegar frame: " + e.getMessage());
                     break;
                 }
 
                 if (currentFrame == null || currentFrame.image == null) { System.out.println("Fim do vídeo ou frame nulo alcançado."); break; }
                 frameNumber++;
-                System.out.println("Processando frame: " + frameNumber);
+    IJ.log("Processando frame: " + frameNumber);
 
                 // Conversão do Frame para BufferedImage e depois para ImagePlus
                 /* A conversão intermediária para BufferedImage é necessária porque
@@ -71,7 +71,7 @@ public class VideoFrameExtractor {
                 OU SEJA É UMA PONTE ENTRE O JAVAC E O IMAGEJ*/
                 
                 BufferedImage bufferedImage = frameConverter.convert(currentFrame);
-                if (bufferedImage == null) { System.err.println("Não foi possível converter o frame " + frameNumber + " para BufferedImage."); continue; }
+                if (bufferedImage == null) { IJ.log("Não foi possível converter o frame " + frameNumber + " para BufferedImage."); continue; }
                 
                 //Converte para IMAGE plus pra gente conseguir usar no imageJ
                 ImagePlus impColor = new ImagePlus("Frame", bufferedImage);
@@ -99,13 +99,13 @@ public class VideoFrameExtractor {
                 ImageStatistics stats = edgeProcessor.getStatistics();
                 double variance = stats.stdDev * stats.stdDev;
                 if (variance < this.blurThreshold) {
-                    System.out.println("Frame " + frameNumber + " descartado: Desfocado (Variância: " + variance + ")");
+        IJ.log("Frame " + frameNumber + " descartado: Desfocado (Variância: " + variance + ")");
                     continue;
                 }
 
                 if (previousGrayProcessor != null) {
                     if (ImageUtils.isTooSimilar(grayProcessor, previousGrayProcessor, this.diffThreshold)) {
-                        System.out.println("Frame " + frameNumber + " descartado: Similar ao anterior");
+            IJ.log("Frame " + frameNumber + " descartado: Similar ao anterior");
                         continue;
                     }
                 }
@@ -116,29 +116,29 @@ public class VideoFrameExtractor {
 
                 IJ.saveAs(grayImpToSave, "PNG", outputFile.getAbsolutePath());
                 if (outputFile.exists()) {
-                    System.out.println("Frame " + frameNumber + " salvo como: " + outputFile.getAbsolutePath());
+        IJ.log("Frame " + frameNumber + " salvo como: " + outputFile.getAbsolutePath());
                     savedCount++;
                 } else {
-                    System.err.println("Falha ao salvar o frame: " + outputFile.getAbsolutePath());
+                    IJ.log("Falha ao salvar o frame: " + outputFile.getAbsolutePath());
                 }
 
                 previousGrayProcessor = grayProcessor.duplicate();
             }
 
         } catch (FrameGrabber.Exception e) {
-            System.err.println("Exceção do FrameGrabber: " + e.getMessage());
+            IJ.log("Exceção do FrameGrabber: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("Ocorreu um erro inesperado: " + e.getMessage());
+            IJ.log("Ocorreu um erro inesperado: " + e.getMessage());
             e.printStackTrace();
         } finally {
             try {
                 if (frameGrabber != null) {
                     frameGrabber.stop();
                     frameGrabber.release();
-                    System.out.println("FrameGrabber parado e liberado.");
+        IJ.log("FrameGrabber parado e liberado.");
                 }
             } catch (FrameGrabber.Exception e) {
-                System.err.println("Erro ao parar/liberar o FrameGrabber: " + e.getMessage());
+                IJ.log("Erro ao parar/liberar o FrameGrabber: " + e.getMessage());
             }
         }
         return savedCount;
