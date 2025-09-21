@@ -26,6 +26,7 @@ public class Extrator_De_Frames_De_Video implements PlugIn {
         DirectoryChooser dc = new DirectoryChooser("Selecione o diretório para salvar os frames...");
         String outputDirString = dc.getDirectory();
         if (outputDirString == null) {
+        	//se nenhuma pasta de saida dos frames for escolhida retorna
             IJ.log("Nenhum diretório de saída selecionado. Plugin cancelado.");
             return;
         }
@@ -53,6 +54,7 @@ public class Extrator_De_Frames_De_Video implements PlugIn {
         final String finalVideoPath = videoPath;
         final Path finalOutputDir = outputDir;
 
+        //nova thread
         Thread thread = new Thread(() -> {
             IJ.log("--- Iniciando a extração de frames ---");
             VideoFrameExtractor extractor = new VideoFrameExtractor(blurThreshold, diffThreshold, filtroEscolhido);

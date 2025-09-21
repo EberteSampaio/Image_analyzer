@@ -23,7 +23,6 @@ public class Main {
         
         VideoFrameExtractor extractor = new VideoFrameExtractor(blurThreshold, diffThreshold, filtroEscolhido);
         int savedFrames = extractor.extractFrames(videoPath, outputDir);
-
         IJ.log("Concluído! " + savedFrames + " frames válidos salvos em: " + outputDir);
     }
 }
