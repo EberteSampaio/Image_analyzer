@@ -38,46 +38,55 @@ public class VideoFrameExtractor {
         this.filtroEscolhido = filtroEscolhido;
     }
 
+    
     public int extractFrames(String videoPath, Path outputDir) {
-        FFmpegFrameGrabber frameGrabber = new FFmpegFrameGrabber(videoPath);
-        int savedCount = 0;
-        int frameNumber = 0;
-
+    	 int savedCount = 0;
+         int frameNumber = 0;
+        IJ.log("Dentro do metodo extractFrames...");
+        IJ.log("Dentro do metodo extractFrames...");
         try {
-        	//se nao existir, mandei criar o diretorio fds
             if (!Files.exists(outputDir)) {
                 Files.createDirectories(outputDir);
             }
+            FFmpegFrameGrabber frameGrabber = new FFmpegFrameGrabber(videoPath);
+            frameGrabber.setFormat("mp4");
             frameGrabber.start();
-IJ.log("Processando video: " + videoPath);
-IJ.log("Total de frames no video: " + frameGrabber.getLengthInFrames());
-
+            int totalFrames = frameGrabber.getLengthInFrames();
+            
+            // Log inicial apenas
+            IJ.log("Video: " + videoPath);
+            IJ.log("Total de frames: " + totalFrames);
+            IJ.log("Processando...");
+            
             while (true) {
                 Frame currentFrame;
                 try {
                     currentFrame = frameGrabber.grabImage();
                 } catch (FrameGrabber.Exception e) {
-                    IJ.log("Erro ao pegar frame: " + e.getMessage());
+                    IJ.log("Erro ao capturar frame: " + e.getMessage());
                     break;
                 }
 
-                if (currentFrame == null || currentFrame.image == null) { System.out.println("Fim do vídeo ou frame nulo alcançado."); break; }
+                if (currentFrame == null || currentFrame.image == null) {
+                    break;
+                }
+                
                 frameNumber++;
-    IJ.log("Processando frame: " + frameNumber);
-
-                // Conversão do Frame para BufferedImage e depois para ImagePlus
-                /* A conversão intermediária para BufferedImage é necessária porque
-				Não existe uma conversão direta de Framepara ImagePlus que é suporta no ImageJJ
-                OU SEJA É UMA PONTE ENTRE O JAVAC E O IMAGEJ*/
+                
+                // Atualizar progresso a cada 10 frames
+                if (frameNumber % 10 == 0) {
+                    IJ.showProgress(frameNumber, totalFrames);
+                    IJ.log("Processando frame " + frameNumber + "/" + totalFrames);
+                }
                 
                 BufferedImage bufferedImage = frameConverter.convert(currentFrame);
-                if (bufferedImage == null) { IJ.log("Não foi possível converter o frame " + frameNumber + " para BufferedImage."); continue; }
+                if (bufferedImage == null) {
+                    continue;
+                }
                 
-                //Converte para IMAGE plus pra gente conseguir usar no imageJ
                 ImagePlus impColor = new ImagePlus("Frame", bufferedImage);
                 ImageProcessor currentProcessor = impColor.getProcessor();       
                
-                // Converter para escala de cinza
                 ImageProcessor grayProcessor = ImageUtils.convertToGrayscale(currentProcessor);
                 
                 ImageProcessor edgeProcessor;
@@ -89,7 +98,7 @@ IJ.log("Total de frames no video: " + frameGrabber.getLengthInFrames());
                     File sobelFile = outputDirSobel.resolve(String.format("sobel_%05d.png", frameNumber)).toFile();
                     IJ.save(new ImagePlus(String.format("sobel_%05d", frameNumber), edgeProcessor), sobelFile.getAbsolutePath());
                 } else {
-                    edgeProcessor = ImageUtils.applyLaplace(grayProcessor); // Laplace
+                    edgeProcessor = ImageUtils.applyLaplace(grayProcessor);
                     Path outputDirLaplace = outputDir.resolve("filtro/laplace");
                     Files.createDirectories(outputDirLaplace);
                     File laplaceFile = outputDirLaplace.resolve(String.format("laplace_%05d.png", frameNumber)).toFile();
@@ -99,48 +108,41 @@ IJ.log("Total de frames no video: " + frameGrabber.getLengthInFrames());
                 ImageStatistics stats = edgeProcessor.getStatistics();
                 double variance = stats.stdDev * stats.stdDev;
                 if (variance < this.blurThreshold) {
-        IJ.log("Frame " + frameNumber + " descartado: Desfocado (Variância: " + variance + ")");
                     continue;
                 }
 
                 if (previousGrayProcessor != null) {
                     if (ImageUtils.isTooSimilar(grayProcessor, previousGrayProcessor, this.diffThreshold)) {
-            IJ.log("Frame " + frameNumber + " descartado: Similar ao anterior");
                         continue;
                     }
                 }
 
-                // Salvar o frame
                 ImagePlus grayImpToSave = new ImagePlus(String.format("frame_%05d", savedCount + 1), grayProcessor);
                 File outputFile = outputDir.resolve(String.format("frame_%05d.png", savedCount + 1)).toFile();
 
                 IJ.saveAs(grayImpToSave, "PNG", outputFile.getAbsolutePath());
                 if (outputFile.exists()) {
-        IJ.log("Frame " + frameNumber + " salvo como: " + outputFile.getAbsolutePath());
                     savedCount++;
-                } else {
-                    IJ.log("Falha ao salvar o frame: " + outputFile.getAbsolutePath());
+                    // Log apenas frames salvos, a cada 5
+                    if (savedCount % 5 == 0) {
+                        IJ.log("Salvos: " + savedCount + " frames");
+                    }
                 }
 
                 previousGrayProcessor = grayProcessor.duplicate();
             }
+            
+            IJ.showProgress(1.0);
+            IJ.log("Concluído!");
 
-        } catch (FrameGrabber.Exception e) {
-            IJ.log("Exceção do FrameGrabber: " + e.getMessage());
-        } catch (Exception e) {
-            IJ.log("Ocorreu um erro inesperado: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            try {
-                if (frameGrabber != null) {
-                    frameGrabber.stop();
-                    frameGrabber.release();
-        IJ.log("FrameGrabber parado e liberado.");
-                }
-            } catch (FrameGrabber.Exception e) {
-                IJ.log("Erro ao parar/liberar o FrameGrabber: " + e.getMessage());
-            }
-        }
+        } catch (UnsatisfiedLinkError e) {
+            IJ.log("Erro de link nativo (FFmpeg não encontrado): " + e.getMessage());
+        } catch (NoClassDefFoundError e) {
+            IJ.log("Classe faltando: " + e.getMessage());
+        } catch (Throwable e) {
+            IJ.handleException(e);
+        
+        } 
         return savedCount;
     }
 }

@@ -9,6 +9,8 @@ import ij.io.DirectoryChooser;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+
 public class Extrator_De_Frames_De_Video implements PlugIn {
 
     @Override
@@ -17,7 +19,7 @@ public class Extrator_De_Frames_De_Video implements PlugIn {
         String diretorioPai = od.getDirectory();
         String nomeArquivo = od.getFileName();
         if (nomeArquivo == null) {
-            IJ.log("Nenhum vídeo selecionado. Plugin cancelado.");
+        	IJ.log("Abrindo vídeo1...");
             return;
         }
         String videoPath = diretorioPai + nomeArquivo;
@@ -53,11 +55,14 @@ public class Extrator_De_Frames_De_Video implements PlugIn {
         // --- 5. Executar o processo em uma nova Thread pra nao travaar
         final String finalVideoPath = videoPath;
         final Path finalOutputDir = outputDir;
-
+        
         //nova thread
         Thread thread = new Thread(() -> {
-            IJ.log("--- Iniciando a extração de frames ---");
+        	IJ.log("Abrindo vídeo thread...");
+        	IJ.log("Video path: " + finalVideoPath);
+        	IJ.log("Output dir: " + finalOutputDir);
             VideoFrameExtractor extractor = new VideoFrameExtractor(blurThreshold, diffThreshold, filtroEscolhido);
+            IJ.log("Entrando no metodo extractFrames...");
             int savedFrames = extractor.extractFrames(finalVideoPath, finalOutputDir);
             IJ.log("Processo Concluído!");
             IJ.log(savedFrames + " frames válidos salvos em: " + finalOutputDir);

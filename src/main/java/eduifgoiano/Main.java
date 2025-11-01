@@ -9,7 +9,7 @@ import ij.IJ;
 public class Main {
     public static void main(String[] args) {
         String videoPath = "C:/Users/randolfo/Documents/projetodev/source/videos/fazjatoba.mp4"; 
-        Path outputDir = Paths.get("C:/Users/randolfo/Documents/projetodev/output");
+        Path outputDir = Paths.get("C:/Users/randolfo/Documents/projetodev/output/ImagensSaida");
         
         double blurThreshold = 10; 
         double diffThreshold = 30;  
