@@ -274,6 +274,7 @@ public class Runner extends JFrame {
     private static String buildMacroString(String inputPath, String outputPath) {
         StringBuilder sb = new StringBuilder();
         
+        
         sb.append("print('\\\\Clear');\n");
         sb.append("run('Clear Results');\n");
         sb.append("dir_input = '" + inputPath + "';\n");
