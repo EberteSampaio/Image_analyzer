@@ -2,288 +2,268 @@ package eduifgoiano;
 
 import ij.IJ;
 import ij.ImageJ;
-import ij.io.DirectoryChooser;
-import ij.io.OpenDialog;
-
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.*;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class Runner {
-    
-    private static ImageJ imageJInstance = null;
+public class Runner extends JFrame {
+
+    private JTextField txtVideoPath;
+    private JTextField txtOutputDir;
+    private JComboBox<String> cbFilter;
+    private JCheckBox chkSaveFiltered;
+    private JButton btnRun;
+    private JProgressBar progressBar;
+    private JLabel lblStatus;
 
     public static void main(String[] args) {
-        // Configura o Look and Feel do sistema
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        // Verifica se está em modo batch (linha de comando)
+        
         if (args.length >= 2) {
             runBatchMode(args);
         } else {
-            // Mostra a tela inicial
-            SwingUtilities.invokeLater(() -> showMainWindow());
+            SwingUtilities.invokeLater(() -> new Runner().setVisible(true));
         }
     }
 
-    private static void initializeImageJ() {
-        if (imageJInstance == null) {
-            imageJInstance = new ImageJ(ImageJ.NO_SHOW);
-            imageJInstance.exitWhenQuitting(false);
-        }
-    }
+    public Runner() {
+        setTitle("Image Analyzer - IF Goiano");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(600, 450);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+        setResizable(false);
 
-    private static void showMainWindow() {
-        JFrame frame = new JFrame("Analisador de Vídeos - IF Goiano");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(500, 350);
-        frame.setLocationRelativeTo(null);
-        frame.setResizable(false);
+        JPanel mainPanel = new JPanel(new GridBagLayout());
+        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Painel principal
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(new Color(240, 240, 245));
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
+        mainPanel.add(new JLabel("Arquivo de Vídeo:"), gbc);
 
-        // Painel superior com logo/título
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBackground(new Color(240, 240, 245));
-        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
-        
-        JLabel titleLabel = new JLabel("Analisador de Vídeos");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        JLabel subtitleLabel = new JLabel("Extração e Análise de Frames");
-        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        subtitleLabel.setForeground(Color.GRAY);
-        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        headerPanel.add(Box.createVerticalStrut(10));
-        headerPanel.add(titleLabel);
-        headerPanel.add(Box.createVerticalStrut(5));
-        headerPanel.add(subtitleLabel);
-        headerPanel.add(Box.createVerticalStrut(20));
+        txtVideoPath = new JTextField();
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        mainPanel.add(txtVideoPath, gbc);
 
-        // Painel central com botões
-        JPanel centerPanel = new JPanel();
-        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
-        centerPanel.setBackground(new Color(240, 240, 245));
+        JButton btnBrowseVideo = new JButton("...");
+        gbc.gridx = 2; gbc.weightx = 0;
+        mainPanel.add(btnBrowseVideo, gbc);
 
-        // Botão Processar Vídeo
-        JButton processButton = createStyledButton("Processar Vídeo", new Color(70, 130, 180));
-        processButton.addActionListener(e -> {
-            frame.setVisible(false);
-            processVideo(frame);
-        });
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
+        mainPanel.add(new JLabel("Pasta de Saída:"), gbc);
 
-        // Botão Sobre
-        JButton aboutButton = createStyledButton("Sobre", new Color(100, 149, 237));
-        aboutButton.addActionListener(e -> showAboutDialog(frame));
+        txtOutputDir = new JTextField();
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        mainPanel.add(txtOutputDir, gbc);
 
-        // Botão Sair
-        JButton exitButton = createStyledButton("Sair", new Color(169, 169, 169));
-        exitButton.addActionListener(e -> System.exit(0));
+        JButton btnBrowseOutput = new JButton("...");
+        gbc.gridx = 2; gbc.weightx = 0;
+        mainPanel.add(btnBrowseOutput, gbc);
 
-        centerPanel.add(processButton);
-        centerPanel.add(Box.createVerticalStrut(10));
-        centerPanel.add(aboutButton);
-        centerPanel.add(Box.createVerticalStrut(10));
-        centerPanel.add(exitButton);
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
+        mainPanel.add(new JLabel("Filtro de Borda:"), gbc);
 
-        // Rodapé
-        JPanel footerPanel = new JPanel();
-        footerPanel.setBackground(new Color(240, 240, 245));
-        JLabel footerLabel = new JLabel("IF Goiano - 2025");
-        footerLabel.setFont(new Font("Arial", Font.PLAIN, 10));
-        footerLabel.setForeground(Color.GRAY);
-        footerPanel.add(footerLabel);
+        cbFilter = new JComboBox<>(new String[]{"Laplace", "Sobel"});
+        gbc.gridx = 1; gbc.weightx = 1.0; gbc.gridwidth = 2;
+        mainPanel.add(cbFilter, gbc);
 
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
-        mainPanel.add(centerPanel, BorderLayout.CENTER);
-        mainPanel.add(footerPanel, BorderLayout.SOUTH);
+        gbc.gridx = 1; gbc.gridy = 3; gbc.gridwidth = 2;
+        chkSaveFiltered = new JCheckBox("Salvar imagens do filtro (Sobel/Laplace)?");
+        chkSaveFiltered.setSelected(false);
+        mainPanel.add(chkSaveFiltered, gbc);
 
-        frame.add(mainPanel);
-        frame.setVisible(true);
-    }
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 3;
+        gbc.insets = new Insets(20, 5, 5, 5);
+        btnRun = new JButton("Iniciar Processamento");
+        btnRun.setPreferredSize(new Dimension(200, 40));
+        mainPanel.add(btnRun, gbc);
 
-    private static JButton createStyledButton(String text, Color color) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Arial", Font.BOLD, 14));
-        button.setForeground(Color.WHITE);
-        button.setBackground(color);
-        button.setFocusPainted(false);
-        button.setBorderPainted(false);
-        button.setOpaque(true);
-        button.setPreferredSize(new Dimension(300, 45));
-        button.setMaximumSize(new Dimension(300, 45));
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // Efeito hover
-        button.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(color.brighter());
+        gbc.gridy = 5;
+        gbc.insets = new Insets(10, 5, 0, 5);
+        progressBar = new JProgressBar(0, 100);
+        progressBar.setStringPainted(true);
+        mainPanel.add(progressBar, gbc);
+
+        gbc.gridy = 6;
+        lblStatus = new JLabel("Aguardando início...");
+        lblStatus.setHorizontalAlignment(SwingConstants.CENTER);
+        mainPanel.add(lblStatus, gbc);
+
+        add(mainPanel, BorderLayout.CENTER);
+
+        btnBrowseVideo.addActionListener(e -> {
+            JFileChooser fc = new JFileChooser();
+            if (!txtVideoPath.getText().isEmpty()) {
+                fc.setCurrentDirectory(new File(txtVideoPath.getText()).getParentFile());
             }
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(color);
+            if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                txtVideoPath.setText(fc.getSelectedFile().getAbsolutePath());
             }
         });
-        
-        return button;
+
+        btnBrowseOutput.addActionListener(e -> {
+            JFileChooser fc = new JFileChooser();
+            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            if (!txtOutputDir.getText().isEmpty()) {
+                fc.setCurrentDirectory(new File(txtOutputDir.getText()));
+            }
+            if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                txtOutputDir.setText(fc.getSelectedFile().getAbsolutePath());
+            }
+        });
+
+        btnRun.addActionListener(e -> startProcessing());
     }
 
-    private static void showAboutDialog(JFrame parent) {
-        String message = "Analisador de Vídeos\n\n" +
-                        "Versão 1.0\n\n" +
-                        "Sistema para extração e análise\n" +
-                        "automática de frames de vídeos.\n\n" +
-                        "IF Goiano - 2025";
-        
-        JOptionPane.showMessageDialog(parent, message, "Sobre", 
-                                     JOptionPane.INFORMATION_MESSAGE);
-    }
+    private void startProcessing() {
+        String videoPath = txtVideoPath.getText();
+        String outputDir = txtOutputDir.getText();
 
-    private static void processVideo(JFrame mainFrame) {
-        OpenDialog od = new OpenDialog("Selecione o Vídeo para processar...");
-        String dir = od.getDirectory();
-        String name = od.getFileName();
-        
-        if (dir == null || name == null) {
-            IJ.log("Seleção cancelada.");
-            mainFrame.setVisible(true);
-            return;
-        }
-        String videoFile = dir + name;
-
-        DirectoryChooser dc = new DirectoryChooser("Selecione onde salvar os resultados...");
-        String outputBaseDir = dc.getDirectory();
-        
-        if (outputBaseDir == null) {
-            IJ.log("Seleção de pasta cancelada.");
-            mainFrame.setVisible(true);
+        if (videoPath.isEmpty() || outputDir.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Selecione o vídeo e a pasta de saída.", "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Cria janela de progresso detalhada
-        ProgressWindow progressWindow = new ProgressWindow();
+        setComponentsEnabled(false);
+        progressBar.setValue(0);
         
-        // Executa processamento em thread separada
         new Thread(() -> {
             try {
-                // Inicializa ImageJ em background (sem mostrar)
-                initializeImageJ();
+                new ImageJ(ImageJ.NO_SHOW);
+
+                Path basePath = Paths.get(outputDir);
+                Path framesDir = basePath.resolve("Frames_Extraidos");
+                Path resultsDir = basePath.resolve("Resultados_Analise");
+
+                double blurThreshold = 10;
+                double diffThreshold = 30;
                 
-                executeProcessing(videoFile, outputBaseDir, progressWindow);
+                int filtroIndex = cbFilter.getSelectedIndex(); 
+                int filtroEscolhido = filtroIndex + 1; 
+                boolean saveFiltered = chkSaveFiltered.isSelected();
+
+                updateStatus("Extraindo frames...");
                 
-                SwingUtilities.invokeLater(() -> {
-                    progressWindow.dispose();
-                    showCompletionDialog(mainFrame);
+                VideoFrameExtractor extractor = new VideoFrameExtractor(
+                        blurThreshold,
+                        diffThreshold,
+                        filtroEscolhido,
+                        saveFiltered
+                );
+
+                extractor.setProgressCallback((current, total, message) -> {
+                    SwingUtilities.invokeLater(() -> {
+                        int percent = (int) ((current / (double) total) * 100);
+                        progressBar.setValue(percent);
+                        progressBar.setString(current + " / " + total);
+                        lblStatus.setText(message);
+                    });
                 });
+
+                int savedFrames = extractor.extractFrames(videoPath, framesDir);
                 
-            } catch (Exception e) {
-                e.printStackTrace();
-                SwingUtilities.invokeLater(() -> {
-                    progressWindow.dispose();
-                    JOptionPane.showMessageDialog(mainFrame, 
-                        "Erro no processamento:\n" + e.getMessage(),
-                        "Erro", JOptionPane.ERROR_MESSAGE);
-                    mainFrame.setVisible(true);
-                });
+                if (savedFrames > 0) {
+                    updateStatus("Executando Macro...");
+                    progressBar.setIndeterminate(true);
+                    
+                    File resDirFile = resultsDir.toFile();
+                    if (!resDirFile.exists()) resDirFile.mkdirs();
+
+                    String inputMacroPath = framesDir.toAbsolutePath().toString().replace("\\", "/");
+                    String outputMacroPath = resultsDir.toAbsolutePath().toString().replace("\\", "/");
+                    
+                    if (!inputMacroPath.endsWith("/")) inputMacroPath += "/";
+                    if (!outputMacroPath.endsWith("/")) outputMacroPath += "/";
+
+                    String macroScript = buildMacroString(inputMacroPath, outputMacroPath);
+                    
+                    IJ.runMacro(macroScript);
+                    
+                    updateStatus("Concluído!");
+                    progressBar.setIndeterminate(false);
+                    progressBar.setValue(100);
+                    
+                    int choice = JOptionPane.showOptionDialog(this,
+                        "Processamento finalizado!\nSalvo em: " + resultsDir.toString() + "\nO que deseja fazer?",
+                        "Sucesso",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        new Object[]{"Processar Outro", "Sair"},
+                        "Processar Outro");
+                        
+                    if (choice == 1) {
+                        System.exit(0);
+                    } else {
+                        SwingUtilities.invokeLater(() -> {
+                            setComponentsEnabled(true);
+                            progressBar.setValue(0);
+                            progressBar.setString("0%");
+                            lblStatus.setText("Aguardando início...");
+                            IJ.log("\\Clear");
+                        });
+                    }
+                } else {
+                    updateStatus("Erro: Nenhum frame extraído.");
+                    JOptionPane.showMessageDialog(this, "Nenhum frame foi extraído.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    SwingUtilities.invokeLater(() -> setComponentsEnabled(true));
+                }
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                updateStatus("Erro fatal: " + ex.getMessage());
+                SwingUtilities.invokeLater(() -> setComponentsEnabled(true));
             }
         }).start();
     }
 
-    private static void showCompletionDialog(JFrame mainFrame) {
-        Object[] options = {"Processar Outro Vídeo", "Fechar Programa"};
-        
-        int choice = JOptionPane.showOptionDialog(null,
-            "A análise foi concluída com sucesso!\nO que deseja fazer agora?",
-            "Processo Finalizado",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null, options, options[0]);
-
-        if (choice == 0) {
-            // Processar outro vídeo
-            IJ.log("\\Clear");
-            processVideo(mainFrame);
-        } else {
-            // Fechar programa
-            System.exit(0);
-        }
+    private void updateStatus(String msg) {
+        SwingUtilities.invokeLater(() -> lblStatus.setText(msg));
     }
 
-    private static void executeProcessing(String videoFile, String outputBaseDir, 
-                                          ProgressWindow progressWindow) throws Exception {
-        System.out.println("------------------------------------------------");
-        System.out.println("Iniciando novo processamento...");
-        System.out.println("Vídeo: " + videoFile);
-        System.out.println("Pasta Base: " + outputBaseDir);
-
-        Path basePath = Paths.get(outputBaseDir);
-        Path framesDir = basePath.resolve("Frames_Extraidos");
-        Path resultsDir = basePath.resolve("Resultados_Analise");
-
-        double blurThreshold = 10;
-        double diffThreshold = 30;
-        int filtroEscolhido = 1;
-
-        VideoFrameExtractor extractor = new VideoFrameExtractor(
-                blurThreshold, diffThreshold, filtroEscolhido);
-
-        // Define o callback de progresso
-        extractor.setProgressCallback((current, total, message) -> {
-            SwingUtilities.invokeLater(() -> {
-                progressWindow.updateProgress(current, total, message);
-            });
-        });
-
-        System.out.println("Extraindo frames...");
-        progressWindow.setStage("Extraindo Frames");
-        
-        int savedFrames = extractor.extractFrames(videoFile, framesDir);
-        System.out.println(savedFrames + " frames válidos extraídos.");
-
-        if (savedFrames > 0) {
-            System.out.println("Executando análise (Macro)...");
-            progressWindow.setStage("Analisando Partículas");
-            
-            File resDirFile = resultsDir.toFile();
-            if (!resDirFile.exists()) {
-                resDirFile.mkdirs();
-            }
-
-            String inputMacroPath = framesDir.toAbsolutePath().toString().replace("\\", "/");
-            String outputMacroPath = resultsDir.toAbsolutePath().toString().replace("\\", "/");
-            
-            if (!inputMacroPath.endsWith("/")) inputMacroPath += "/";
-            if (!outputMacroPath.endsWith("/")) outputMacroPath += "/";
-
-            String macroScript = buildMacroString(inputMacroPath, outputMacroPath);
-            IJ.runMacro(macroScript);
-            
-            System.out.println("Processo completo!");
-        } else {
-            IJ.log("Nenhum frame salvo. Pulando etapa do Macro.");
-        }
+    private void setComponentsEnabled(boolean enabled) {
+        txtVideoPath.setEnabled(enabled);
+        txtOutputDir.setEnabled(enabled);
+        cbFilter.setEnabled(enabled);
+        chkSaveFiltered.setEnabled(enabled);
+        btnRun.setEnabled(enabled);
     }
 
     private static void runBatchMode(String[] args) {
-        initializeImageJ();
+        new ImageJ(ImageJ.NO_SHOW);
         String videoFile = args[0];
         String outputBaseDir = args[1];
         
         try {
-            executeProcessing(videoFile, outputBaseDir, new ProgressWindow());
+            Path basePath = Paths.get(outputBaseDir);
+            Path framesDir = basePath.resolve("Frames_Extraidos");
+            Path resultsDir = basePath.resolve("Resultados_Analise");
+
+            VideoFrameExtractor extractor = new VideoFrameExtractor(10, 30, 1, false);
+            int savedFrames = extractor.extractFrames(videoFile, framesDir);
+
+            if (savedFrames > 0) {
+                File resDirFile = resultsDir.toFile();
+                if (!resDirFile.exists()) resDirFile.mkdirs();
+
+                String inputMacroPath = framesDir.toAbsolutePath().toString().replace("\\", "/");
+                String outputMacroPath = resultsDir.toAbsolutePath().toString().replace("\\", "/");
+                
+                if (!inputMacroPath.endsWith("/")) inputMacroPath += "/";
+                if (!outputMacroPath.endsWith("/")) outputMacroPath += "/";
+
+                String macroScript = buildMacroString(inputMacroPath, outputMacroPath);
+                IJ.runMacro(macroScript);
+            }
             System.exit(0);
         } catch (Exception e) {
             e.printStackTrace();
@@ -328,71 +308,5 @@ public class Runner {
         sb.append("showMessage('Macro Concluido!', 'CSV salvo em: ' + dir_output);\n");
         
         return sb.toString();
-    }
-
-    // Classe interna para a janela de progresso
-    static class ProgressWindow extends JFrame {
-        private JProgressBar progressBar;
-        private JLabel stageLabel;
-        private JLabel detailLabel;
-        private JLabel percentLabel;
-
-        public ProgressWindow() {
-            setTitle("Processando...");
-            setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-            setSize(500, 200);
-            setLocationRelativeTo(null);
-            setResizable(false);
-
-            JPanel panel = new JPanel();
-            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-            panel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-            panel.setBackground(Color.WHITE);
-
-            stageLabel = new JLabel("Iniciando...");
-            stageLabel.setFont(new Font("Arial", Font.BOLD, 16));
-            stageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            detailLabel = new JLabel("Preparando processamento");
-            detailLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            detailLabel.setForeground(Color.GRAY);
-            detailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            progressBar = new JProgressBar(0, 100);
-            progressBar.setValue(0);
-            progressBar.setStringPainted(true);
-            progressBar.setAlignmentX(Component.CENTER_ALIGNMENT);
-            progressBar.setPreferredSize(new Dimension(440, 30));
-            progressBar.setMaximumSize(new Dimension(440, 30));
-
-            percentLabel = new JLabel("0%");
-            percentLabel.setFont(new Font("Arial", Font.BOLD, 14));
-            percentLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            panel.add(stageLabel);
-            panel.add(Box.createVerticalStrut(10));
-            panel.add(detailLabel);
-            panel.add(Box.createVerticalStrut(15));
-            panel.add(progressBar);
-            panel.add(Box.createVerticalStrut(10));
-            panel.add(percentLabel);
-
-            add(panel);
-            setVisible(true);
-        }
-
-        public void setStage(String stage) {
-            SwingUtilities.invokeLater(() -> stageLabel.setText(stage));
-        }
-
-        public void updateProgress(int current, int total, String message) {
-            SwingUtilities.invokeLater(() -> {
-                int percent = (int) ((current / (double) total) * 100);
-                progressBar.setValue(percent);
-                progressBar.setString(current + " / " + total);
-                percentLabel.setText(percent + "%");
-                detailLabel.setText(message);
-            });
-        }
     }
 }

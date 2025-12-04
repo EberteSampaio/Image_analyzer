@@ -68,7 +68,8 @@ public class Extrator_De_Frames_De_Video implements PlugIn {
             VideoFrameExtractor extractor = new VideoFrameExtractor(
                 blurThreshold, 
                 diffThreshold, 
-                filtroEscolhido
+                filtroEscolhido,
+                false
             );
             
             // Define callback de progresso (opcional para o plugin)

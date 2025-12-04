@@ -21,7 +21,7 @@ public class Main {
         int filtroEscolhido = scanner.nextInt();
         scanner.close();
         
-        VideoFrameExtractor extractor = new VideoFrameExtractor(blurThreshold, diffThreshold, filtroEscolhido);
+        VideoFrameExtractor extractor = new VideoFrameExtractor(blurThreshold, diffThreshold, filtroEscolhido, false);
         int savedFrames = extractor.extractFrames(videoPath, outputDir);
         IJ.log("Concluído! " + savedFrames + " frames válidos salvos em: " + outputDir);
     }
