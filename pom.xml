@@ -75,7 +75,8 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>edu.ifgoiano.Main</mainClass>
+                            <mainClass>eduifgoiano.Runner</mainClass>
+                           <!-- <mainClass>edu.ifgoiano.Main</mainClass>-->
                         </manifest>
                     </archive>
                     <!-- Configuração para incluir bibliotecas nativas -->
